@@ -12,6 +12,7 @@ export type GeoPlace = {
 export type Category =
   | "Heritage"
   | "Temples"
+  | "Fort"
   | "Food"
   | "Beach"
   | "Shopping"
@@ -23,20 +24,25 @@ export type Category =
 export const SEARCH_CATEGORIES: Category[] = [
   "Heritage",
   "Temples",
+  "Fort",
+  "Beach",
+  "Shopping",
+  "Culture",
+  "Amusement",
+  "Hotels",
+  "Food",
+];
+
+export const INTEREST_OPTIONS = [
+  "Heritage",
+  "Temples",
+  "Fort",
   "Food",
   "Beach",
   "Shopping",
   "Culture",
   "Amusement",
   "Hotels",
-];
-
-export const INTEREST_OPTIONS = [
-  "Heritage",
-  "Food",
-  "Beach",
-  "Shopping",
-  "Culture",
   "Other",
 ] as const;
 
@@ -44,6 +50,14 @@ export const TRANSPORT_MODES = ["Walk", "Taxi", "Auto", "Bus", "Metro", "Own veh
 export type TransportMode = (typeof TRANSPORT_MODES)[number];
 
 export type OpeningPeriod = { day: number; open: number; close: number }; // minutes from 00:00, close may exceed 1440
+
+export type TourGuideContact = {
+  name: string;
+  phone: string;
+  agency: string;
+  verified: boolean;
+  language?: string;
+};
 
 export type Place = {
   id: string;
@@ -64,6 +78,31 @@ export type Place = {
   mapsUrl: string;
   distanceKm: number; // from destination centre
   dayTrip?: boolean;
+  photoUrl?: string | null;
+  preview3dUrl?: string | null;
+  phone?: string | null;
+  tourGuideContact?: TourGuideContact | null;
+};
+
+export type TravelTicket = {
+  id: string;
+  mode: "Flight" | "Train" | "Bus" | "Metro";
+  from: string;
+  to: string;
+  departureDate: string;
+  departureTime: string;
+  arrivalTime: string;
+  duration: string;
+  operator: string;
+  vehicleNumber: string;
+  seatNumber: string;
+  travelClass: string;
+  price: number;
+  currency: string;
+  passengerName: string;
+  pnr: string;
+  status: "Confirmed" | "Completed" | "Cancelled";
+  bookedAt: string;
 };
 
 export type LegOption = {
@@ -123,6 +162,9 @@ export type PlanDay = {
 };
 
 export type TripPlan = {
+  title?: string;
+  description?: string;
+  planStyle?: string;
   destination: GeoPlace;
   origin: GeoPlace | null;
   days: PlanDay[];

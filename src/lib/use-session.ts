@@ -38,12 +38,11 @@ export function displayName(session: Session | null) {
     if (entered?.trim()) return entered.trim();
   }
   const m = session?.user.user_metadata ?? {};
-  return (
-    (m["display_name"] as string) ||
-    (m["full_name"] as string) ||
-    session?.user.email?.split("@")[0] ||
-    "traveller"
-  );
+  const explicit = (m["display_name"] as string) || (m["full_name"] as string);
+  if (explicit && explicit.trim() && !explicit.includes("@")) {
+    return explicit.trim();
+  }
+  return "Traveller";
 }
 
 export function greetingFor(d: Date) {

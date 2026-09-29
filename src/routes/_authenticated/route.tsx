@@ -81,10 +81,10 @@ function Shell() {
             <Badge size={36} />
             <span className="min-w-0">
               <span className="block font-display text-xl font-semibold leading-tight">
-                Rootify
+                {t.appName}
               </span>
               <span className="block text-xs leading-tight whitespace-normal text-muted-foreground">
-                {TAGLINE}
+                {t.tagline}
               </span>
             </span>
           </Link>

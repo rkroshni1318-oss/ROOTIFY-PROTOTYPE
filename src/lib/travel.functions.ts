@@ -70,8 +70,8 @@ const tripInput = z.object({
   budget: z.number().min(0),
   currency: z.string().max(5),
   group: z.enum(["Solo", "Family", "Friends"]),
-  interests: z.array(z.string()).max(8),
-  otherInterest: z.string().max(80),
+  interests: z.array(z.string()),
+  otherInterest: z.string().max(120),
   transport: z.array(z.enum(["Walk", "Taxi", "Auto", "Bus", "Metro", "Own vehicle"])).min(1),
   lessWalking: z.boolean(),
   wheelchair: z.boolean(),
@@ -88,6 +88,19 @@ export const generatePlan = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { buildPlan } = await import("./travel.server");
     return buildPlan(data);
+  });
+
+export const generateMultiplePlans = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => {
+    const v = tripInput.parse(d);
+    const days = (Date.parse(v.endDate) - Date.parse(v.startDate)) / 86400000 + 1;
+    if (days < 1 || days > 10) throw new Error("Trips can be 1 to 10 days long.");
+    return v as TripInput;
+  })
+  .handler(async ({ data }) => {
+    const { buildMultiplePlans } = await import("./travel.server");
+    return buildMultiplePlans(data);
   });
 
 export const recomputeLegs = createServerFn({ method: "POST" })
@@ -115,4 +128,20 @@ export const recomputeLegs = createServerFn({ method: "POST" })
     );
     if (r.geometry && r.legs[0]) r.legs[0].geometry = r.geometry;
     return r.legs;
+  });
+
+export const askGeminiTravelAgent = createServerFn({ method: "POST" })
+  .inputValidator((d) =>
+    z
+      .object({
+        prompt: z.string().min(1).max(1000),
+        destination: z.string().optional(),
+        planSummary: z.string().optional(),
+        language: z.string().optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data }) => {
+    const { askGeminiTravelAdvisor } = await import("./gemini.server");
+    return askGeminiTravelAdvisor(data);
   });

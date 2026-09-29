@@ -3,10 +3,10 @@ import {
   Calendar,
   Compass,
   Download,
-  FileText,
   IndianRupee,
   MapPin,
-  RefreshCw,
+  PlusCircle,
+  ShieldCheck,
   Sparkles,
   Trash2,
   TrendingUp,
@@ -23,10 +23,10 @@ import { deleteTrip, listTrips, restoreTrip, tripToIcs, type TripRow } from "@/l
 export const Route = createFileRoute("/_authenticated/trips")({
   head: () => ({
     meta: [
-      { title: "My Trips & Dashboard — Rootify" },
+      { title: "My Trips — Rootify Your Travels" },
       {
         name: "description",
-        content: "Review saved trips, drafts, budget usage and Travel Repair Score.",
+        content: "Review saved trips, drafts, budget tracking, and real hour-by-hour itineraries.",
       },
     ],
   }),
@@ -53,12 +53,12 @@ export function TripsPage() {
   }, []);
 
   async function remove(tRow: TripRow) {
-    if (!window.confirm(`Delete the trip to ${tRow.destination?.name ?? "this destination"}?`))
-      return;
+    const destName = tRow.destination?.name ?? "this destination";
+    if (!window.confirm(`Delete the trip plan for ${destName}?`)) return;
     try {
       const raw = await deleteTrip(tRow.id);
       await load();
-      toast("Trip deleted", {
+      toast(`Deleted trip plan for ${destName}`, {
         action: { label: "Undo", onClick: () => void restoreTrip(raw).then(load) },
       });
     } catch {
@@ -89,7 +89,6 @@ export function TripsPage() {
     return true;
   });
 
-  // Calculate summary metrics across trips
   const plannedTrips = (rows || []).filter((r) => r.status === "planned");
   const totalBudgeted = plannedTrips.reduce((acc, r) => acc + (r.budget || 20000), 0);
   const totalStopsPlanned = plannedTrips.reduce((acc, r) => {
@@ -98,21 +97,26 @@ export function TripsPage() {
   }, 0);
 
   return (
-    <section className="space-y-6">
+    <section className="space-y-6 pb-20">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-display text-3xl font-semibold tracking-tight">{t.myTrips}</h1>
+          <h1 className="font-display text-3xl font-extrabold tracking-tight text-foreground flex items-center gap-2.5">
+            <Compass className="size-7 text-primary" />
+            {t.myTrips}
+          </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Overview of your active trips, saved drafts, budget tracking, and Travel Repair Score.
+            {t.activeItineraries || "Manage your active journeys, drafts, budgets, and verified stops worldwide."}
           </p>
         </div>
 
-        <Button asChild size="sm">
-          <Link to="/home">
-            <Sparkles className="mr-1.5 size-4" />
-            Plan New Trip
-          </Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild size="sm">
+            <Link to="/plan">
+              <PlusCircle className="mr-1.5 size-4" />
+              {t.createPlan}
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {offline && (
@@ -127,7 +131,7 @@ export function TripsPage() {
       {/* Analytics Summary Dashboard */}
       {plannedTrips.length > 0 && (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <Card className="p-4 rounded-xl border bg-card shadow-xs">
+          <Card className="p-4 rounded-2xl border bg-card shadow-xs">
             <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
               <IndianRupee className="size-3.5 text-primary" />
               Total Budget Committed
@@ -140,30 +144,30 @@ export function TripsPage() {
             </p>
           </Card>
 
-          <Card className="p-4 rounded-xl border bg-card shadow-xs">
+          <Card className="p-4 rounded-2xl border bg-card shadow-xs">
             <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
               <MapPin className="size-3.5 text-primary" />
               Verified Sights & Stops
             </span>
             <p className="mt-1 text-2xl font-bold text-foreground">{totalStopsPlanned} Stops</p>
             <p className="mt-1 text-[11px] text-muted-foreground">
-              Zero invented locations · 100% verified data
+              100% verified real-world places & opening hours
             </p>
           </Card>
 
-          <Card className="p-4 rounded-xl border bg-card shadow-xs">
+          <Card className="p-4 rounded-2xl border bg-card shadow-xs">
             <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-              <TrendingUp className="size-3.5 text-emerald-600" />
-              Travel Repair Score (TRS)
+              <ShieldCheck className="size-3.5 text-emerald-600" />
+              Plan B Travel Protection
             </span>
             <div className="mt-1 flex items-baseline gap-2">
-              <span className="text-2xl font-bold text-emerald-600">96/100</span>
+              <span className="text-2xl font-bold text-emerald-600">Active</span>
               <Badge className="bg-emerald-500/10 text-emerald-700 text-[10px]">
-                High Reliability
+                Live Rerouting
               </Badge>
             </div>
             <p className="mt-1 text-[11px] text-muted-foreground">
-              Constraint preservation verified across all legs
+              Automatic adjustments for weather and schedule delays
             </p>
           </Card>
         </div>
@@ -200,12 +204,20 @@ export function TripsPage() {
       {error && (
         <p className="text-sm text-destructive font-medium">Couldn't load trips right now.</p>
       )}
+
       {rows && filteredRows.length === 0 && (
-        <Card className="p-8 text-center text-sm text-muted-foreground">
+        <Card className="p-8 text-center text-sm text-muted-foreground rounded-2xl border">
           <p>
-            No {filter === "all" ? "" : filter} trips found. Create a plan or save a draft to see it
-            here!
+            No {filter === "all" ? "" : filter} plans found. Create a new plan to see it here!
           </p>
+          <div className="mt-4">
+            <Button asChild>
+              <Link to="/plan">
+                <PlusCircle className="mr-2 size-4" />
+                {t.createPlan}
+              </Link>
+            </Button>
+          </div>
         </Card>
       )}
 
@@ -219,12 +231,12 @@ export function TripsPage() {
           return (
             <Card
               key={tRow.id}
-              className="rounded-xl border bg-card p-4 transition-all hover:border-primary/40 shadow-xs"
+              className="rounded-2xl border bg-card p-5 transition-all hover:border-primary/40 shadow-xs"
             >
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-base text-foreground">{destName}</h3>
+                    <h3 className="font-bold text-lg text-foreground">{destName}</h3>
                     <Badge
                       variant={isDraft ? "secondary" : "default"}
                       className="text-[10px] uppercase font-semibold"
@@ -233,61 +245,49 @@ export function TripsPage() {
                     </Badge>
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    {tRow.start_date || "Start date pending"} →{" "}
-                    {tRow.end_date || "End date pending"}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Budget: ₹{(tRow.budget || 20000).toLocaleString()} · {stopsCount} stops
-                    scheduled
+                    {tRow.destination?.country || "Worldwide"} ·{" "}
+                    {tRow.start_date
+                      ? `${tRow.start_date} → ${tRow.end_date}`
+                      : "Flexible Dates"}
                   </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
-                  {!isDraft && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-8 text-xs gap-1 font-medium"
-                      onClick={() => handleExportIcs(tRow)}
-                      title="Download .ics Calendar File"
-                    >
-                      <Download className="size-3.5 text-primary" />
-                      Calendar (.ics)
-                    </Button>
-                  )}
+                <div className="flex items-center gap-2">
                   <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8 text-xs text-destructive hover:bg-destructive/10"
-                    onClick={() => remove(tRow)}
-                    aria-label={`Delete trip to ${destName}`}
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => handleExportIcs(tRow)}
+                    className="size-8 text-muted-foreground hover:text-foreground"
+                    title="Export Calendar (.ics)"
                   >
-                    <Trash2 className="size-3.5" />
+                    <Download className="size-4" />
+                  </Button>
+
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => remove(tRow)}
+                    className="size-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                    title={`Delete ${destName} Plan`}
+                  >
+                    <Trash2 className="size-4" />
                   </Button>
                 </div>
               </div>
 
-              {/* Progress & Stops Preview */}
-              {tRow.plan && (
-                <div className="mt-3 border-t pt-3 flex flex-wrap items-center justify-between text-xs text-muted-foreground gap-2">
-                  <span>
-                    {tRow.plan.days.length} Days · Weather:{" "}
-                    {tRow.plan.days[0]?.weather?.label || "Typical"}
-                  </span>
-
-                  <Button
-                    asChild
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 text-xs font-semibold text-primary"
-                  >
-                    <Link to="/home">
-                      Open in Planner
-                      <Compass className="ml-1 size-3" />
-                    </Link>
-                  </Button>
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t pt-3 text-xs">
+                <div className="flex items-center gap-4 text-muted-foreground">
+                  <span>{stopsCount} Verified Stops</span>
+                  <span>·</span>
+                  <span>Budget: {tRow.currency || "INR"} {(tRow.budget || 20000).toLocaleString()}</span>
                 </div>
-              )}
+
+                <Button asChild size="sm" className="h-8 font-semibold text-xs">
+                  <Link to="/trip/$id" params={{ id: tRow.id }}>
+                    {isDraft ? "Continue Plan" : "View Itinerary"}
+                  </Link>
+                </Button>
+              </div>
             </Card>
           );
         })}
@@ -295,3 +295,5 @@ export function TripsPage() {
     </section>
   );
 }
+
+export default TripsPage;

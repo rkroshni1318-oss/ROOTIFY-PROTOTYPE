@@ -31,27 +31,89 @@ function gatewayHeaders(extra: Record<string, string> = {}) {
 
 /* ---------------- Geocoding ---------------- */
 export async function geocode(q: string, lang = "en"): Promise<GeoPlace[]> {
-  const r = await fetch(
-    `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=8&language=${lang}&format=json`,
-  );
-  if (!r.ok) throw new Error(`Destination search failed (${r.status})`);
-  const j = (await r.json()) as { results?: any[] };
-  return (j.results ?? []).map((x) => ({
-    id: String(x.id),
-    name: x.name,
-    admin1: x.admin1 ?? null,
-    country: x.country ?? "",
-    countryCode: x.country_code ?? null,
-    lat: x.latitude,
-    lon: x.longitude,
-    timezone: x.timezone ?? "UTC",
-  }));
+  const cleanQ = q.trim();
+  if (cleanQ.length < 2) return [];
+
+  const list: GeoPlace[] = [];
+  const seen = new Set<string>();
+
+  // 1. Try Nominatim OpenStreetMap Geocoding (super accurate for states like Bihar, villages, and landmarks worldwide)
+  try {
+    const nomRes = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cleanQ)}&format=json&addressdetails=1&limit=6`,
+      {
+        headers: {
+          "User-Agent": "Rootify/1.0",
+          "Accept-Language": lang === "ta" ? "ta,en" : lang === "hi" ? "hi,en" : "en",
+        },
+      },
+    );
+    if (nomRes.ok) {
+      const items = (await nomRes.json()) as any[];
+      for (const item of items) {
+        const lat = parseFloat(item.lat);
+        const lon = parseFloat(item.lon);
+        if (isNaN(lat) || isNaN(lon)) continue;
+        const name = item.name || item.display_name.split(",")[0]?.trim();
+        const admin1 = item.address?.state || item.address?.county || item.address?.region || null;
+        const country = item.address?.country || "";
+        const countryCode = item.address?.country_code?.toUpperCase() || null;
+        const key = `${name.toLowerCase()}-${country.toLowerCase()}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          list.push({
+            id: `nom:${item.place_id}`,
+            name,
+            admin1,
+            country,
+            countryCode,
+            lat,
+            lon,
+            timezone: "auto",
+          });
+        }
+      }
+    }
+  } catch {
+    // Fall back to Open-Meteo
+  }
+
+  // 2. Query Open-Meteo geocoding to complement
+  try {
+    const r = await fetch(
+      `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cleanQ)}&count=8&language=${lang}&format=json`,
+    );
+    if (r.ok) {
+      const j = (await r.json()) as { results?: any[] };
+      for (const x of j.results ?? []) {
+        const key = `${x.name.toLowerCase()}-${(x.country ?? "").toLowerCase()}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          list.push({
+            id: `om:${x.id}`,
+            name: x.name,
+            admin1: x.admin1 ?? null,
+            country: x.country ?? "",
+            countryCode: x.country_code ?? null,
+            lat: x.latitude,
+            lon: x.longitude,
+            timezone: x.timezone ?? "UTC",
+          });
+        }
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  return list;
 }
 
 /* ---------------- Places ---------------- */
 const GOOGLE_TYPES: Record<Category, string[]> = {
   Heritage: ["historical_landmark", "monument", "historical_place", "cultural_landmark"],
   Temples: ["hindu_temple", "church", "mosque", "synagogue", "buddhist_temple"],
+  Fort: ["historical_landmark", "monument", "castle", "tourist_attraction"],
   Food: ["restaurant", "cafe"],
   Beach: ["beach"],
   Shopping: ["shopping_mall", "market", "gift_shop"],
@@ -60,11 +122,16 @@ const GOOGLE_TYPES: Record<Category, string[]> = {
   Hotels: ["hotel", "resort_hotel", "guest_house"],
   Other: [],
 };
-const OUTDOOR: Category[] = ["Beach", "Heritage", "Amusement"];
+const OUTDOOR: Category[] = ["Beach", "Heritage", "Amusement", "Fort"];
 
 const OSM_TAGS: Record<Category, string[]> = {
   Heritage: ['nwr["historic"]["name"]', 'nwr["tourism"="attraction"]["name"]'],
   Temples: ['nwr["amenity"="place_of_worship"]["name"]'],
+  Fort: [
+    'nwr["historic"~"^(castle|fort|citadel)"]["name"]',
+    'nwr["castle_type"~"^(fortress|defensive)"]["name"]',
+    'nwr["historic"="monument"]["name"~"Fort|Castle|Kottai",i]',
+  ],
   Food: ['nwr["amenity"~"^(restaurant|cafe|fast_food)$"]["name"]'],
   Beach: ['nwr["natural"="beach"]["name"]'],
   Shopping: [
@@ -591,6 +658,14 @@ const CHENNAI_VERIFIED_PLACES: Place[] = [
   },
 ];
 
+import {
+  enrichPlace,
+  getDestKey,
+  VERIFIED_WORLD_PLACES,
+  WORLDWIDE_TOUR_GUIDES,
+} from "./verified-places";
+import { fetchRealPlacesWithGemini } from "./gemini.server";
+
 export async function searchPlaces(opts: {
   centre: { lat: number; lon: number; name: string };
   category: Category;
@@ -600,6 +675,30 @@ export async function searchPlaces(opts: {
 }): Promise<{ places: Place[]; source: "google" | "osm" }> {
   const radius = Math.min(50000, (opts.radiusKm ?? 15) * 1000);
   const lang = opts.lang ?? "en";
+  const destKey = getDestKey(opts.centre.name);
+
+  // 1. Check verified database for this destination
+  const destinationPlaces = VERIFIED_WORLD_PLACES[destKey];
+  if (destinationPlaces && destinationPlaces.length) {
+    const matched = destinationPlaces
+      .filter((p) => {
+        if (opts.category === "Heritage")
+          return p.category === "Heritage" || p.category === "Fort" || p.category === "Temples";
+        if (opts.category === "Fort") return p.category === "Fort" || p.category === "Heritage";
+        if (opts.category === "Temples")
+          return p.category === "Temples" || p.category === "Heritage";
+        if (opts.category === "Culture")
+          return p.category === "Culture" || p.category === "Heritage";
+        return p.category === opts.category;
+      })
+      .map((p) => enrichPlace(p, opts.centre));
+
+    if (matched.length > 0) {
+      return { places: dedupe(matched), source: "google" };
+    }
+  }
+
+  // 2. Try Google Places API (if configured)
   let g: Place[] | null = null;
   try {
     if (opts.keyword) {
@@ -616,25 +715,87 @@ export async function searchPlaces(opts: {
   } catch {
     g = null;
   }
-  if (g && g.length) return { places: dedupe(g), source: "google" };
+  if (g && g.length) {
+    const enriched = g.map((p) => enrichPlace(p, opts.centre));
+    return { places: dedupe(enriched), source: "google" };
+  }
 
+  // 3. Try OpenStreetMap Overpass API
   let o: Place[] = [];
   try {
     o = await osmPlaces(opts.category, opts.centre, radius);
   } catch {
     o = [];
   }
-  if (o && o.length) return { places: dedupe(o), source: "osm" };
+  if (o && o.length) {
+    const enriched = o.map((p) => enrichPlace(p, opts.centre));
+    return { places: dedupe(enriched), source: "osm" };
+  }
 
-  // Fallback to verified real landmark places for Chennai / general
-  const fallback = CHENNAI_VERIFIED_PLACES.filter(
-    (p) =>
-      p.category === opts.category ||
-      (opts.category === "Heritage" && p.category === "Culture") ||
-      (opts.category === "Culture" && p.category === "Heritage"),
-  );
+  // 4. Try Gemini Real-World Grounded Extraction for this exact destination
+  try {
+    const aiPlaces = await fetchRealPlacesWithGemini(opts.centre, opts.category);
+    if (aiPlaces && aiPlaces.length > 0) {
+      const places: Place[] = aiPlaces.map((ap: any, idx: number) => {
+        const lat = typeof ap.lat === "number" ? ap.lat : opts.centre.lat;
+        const lon = typeof ap.lon === "number" ? ap.lon : opts.centre.lon;
+        const place: Place = {
+          id: `ai:${destKey}:${opts.category.toLowerCase()}:${idx}_${Date.now()}`,
+          name: ap.name,
+          category: opts.category,
+          lat,
+          lon,
+          address: ap.address || `${opts.centre.name}`,
+          rating: ap.rating || 4.6,
+          ratingCount: ap.ratingCount || 7500,
+          price: ap.price || "Free entry",
+          hoursText: ap.hoursText || ["09:00 - 18:00"],
+          periods: [0, 1, 2, 3, 4, 5, 6].map((day) => ({ day, open: 540, close: 1080 })),
+          wheelchair: ap.wheelchair !== false,
+          outdoor: OUTDOOR.includes(opts.category),
+          source: "google",
+          mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ap.name + " " + opts.centre.name)}`,
+          distanceKm: Math.round(haversineKm(opts.centre, { lat, lon }) * 10) / 10,
+          photoUrl: null, // clean icon placeholder, never wrong photo
+        };
+        return enrichPlace(place, opts.centre);
+      });
+      if (places.length > 0) {
+        return { places: dedupe(places), source: "google" };
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  // 5. Fallback to destination places if any exist
+  if (destinationPlaces && destinationPlaces.length) {
+    return {
+      places: destinationPlaces.slice(0, 4).map((p) => enrichPlace(p, opts.centre)),
+      source: "google",
+    };
+  }
+
+  // 6. Only return Chennai places if the searched destination is Chennai
+  if (destKey === "chennai") {
+    const fallback = CHENNAI_VERIFIED_PLACES.filter(
+      (p) =>
+        p.category === opts.category ||
+        (opts.category === "Heritage" && (p.category === "Culture" || p.category === "Fort")) ||
+        (opts.category === "Fort" && p.category === "Heritage"),
+    ).map((p) => enrichPlace(p, opts.centre));
+
+    return {
+      places: fallback.length
+        ? fallback
+        : CHENNAI_VERIFIED_PLACES.slice(0, 4).map((p) => enrichPlace(p, opts.centre)),
+      source: "google",
+    };
+  }
+
+  // NEVER return Chennai places for other destinations!
   return {
-    places: fallback.length ? fallback : CHENNAI_VERIFIED_PLACES.slice(0, 4),
+    places: [],
     source: "google",
   };
 }
@@ -1175,3 +1336,43 @@ export async function buildPlan(input: TripInput): Promise<TripPlan> {
     generatedAt: new Date().toISOString(),
   };
 }
+
+export async function buildMultiplePlans(input: TripInput): Promise<TripPlan[]> {
+  const basePlan = await buildPlan(input);
+  basePlan.title = "Option 1: Highlights & Cultural Heritage";
+  basePlan.description =
+    "A well-balanced itinerary showcasing top-rated landmarks, cultural monuments, and popular viewpoints.";
+  basePlan.planStyle = "Heritage & Culture";
+
+  // Variation 2: Scenic Nature & Outdoor Exploration
+  const natureInterests = Array.from(
+    new Set(["Beach", "Culture", "Amusement", ...input.interests]),
+  );
+  const naturePlan = await buildPlan({ ...input, interests: natureInterests });
+  naturePlan.title = "Option 2: Scenic Nature & Outdoor Exploration";
+  naturePlan.description =
+    "Emphasizes lush viewpoints, nature lakes, botanical gardens, and fresh outdoor atmosphere.";
+  naturePlan.planStyle = "Scenic & Nature";
+
+  // Variation 3: Culinary & Authentic Local Living
+  const culinaryInterests = Array.from(new Set(["Food", "Shopping", "Culture", ...input.interests]));
+  const culinaryPlan = await buildPlan({ ...input, interests: culinaryInterests });
+  culinaryPlan.title = "Option 3: Culinary & Authentic Local Living";
+  culinaryPlan.description =
+    "Focuses on famous regional cafes, local food trails, shopping souks, and cultural crafts.";
+  culinaryPlan.planStyle = "Culinary & Lifestyle";
+
+  // Variation 4: Action & High-Pace Sightseeing
+  const expressPlan = await buildPlan({
+    ...input,
+    dayStart: "07:30",
+    dayEnd: "22:00",
+  });
+  expressPlan.title = "Option 4: Action & High-Pace Sightseeing";
+  expressPlan.description =
+    "Packed schedule maximizing total places visited, photography points, and active exploration.";
+  expressPlan.planStyle = "Active Sightseeing";
+
+  return [basePlan, naturePlan, culinaryPlan, expressPlan];
+}
+
