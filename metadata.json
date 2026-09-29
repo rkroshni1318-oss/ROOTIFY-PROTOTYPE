@@ -1,0 +1,5 @@
+{
+  "name": "Rootify Your Travels",
+  "description": "A smart, accessible travel planner providing live weather, tailored day-by-day itineraries, hotels, and budget tracking.",
+  "capabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
