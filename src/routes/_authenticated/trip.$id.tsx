@@ -5,17 +5,22 @@ import {
   AlertTriangle,
   ArrowDown,
   ArrowUp,
+  Bus,
   CalendarPlus,
+  Car,
   CheckCircle2,
   CloudRain,
   Clock,
   ExternalLink,
+  Hotel,
   Layers,
   Loader2,
   Navigation,
+  Plane,
   ShieldCheck,
   Sparkles,
   Star,
+  Train,
   Users,
   XCircle,
 } from "lucide-react";
@@ -28,11 +33,46 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useI18n } from "@/lib/i18n";
+import {
+  hotelBookingLink,
+  interCityBookingLinks,
+  intraCityBookingLink,
+  type BookingLink,
+} from "@/lib/booking-handoff";
 import { applyDay, detect, repair, toHHMM, toMin, trs, type Candidate } from "@/lib/repair";
 import { generateMultiplePlans, recomputeLegs } from "@/lib/travel.functions";
 import type { Leg, PlanDay, TripPlan } from "@/lib/travel-types";
 import { getTrip, tripToIcs, updatePlan, type TripRow } from "@/lib/trips";
 import { cn } from "@/lib/utils";
+
+const BOOKING_ICONS: Record<string, typeof Plane> = {
+  plane: Plane,
+  train: Train,
+  bus: Bus,
+  car: Car,
+  walk: Navigation,
+  hotel: Hotel,
+};
+
+function BookingButton({ link, size = "sm" }: { link: BookingLink; size?: "sm" | "xs" }) {
+  const Icon = BOOKING_ICONS[link.icon] ?? ExternalLink;
+  return (
+    <a
+      href={link.url}
+      target="_blank"
+      rel="noreferrer"
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 font-semibold transition-all",
+        "border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 hover:border-primary/50",
+        size === "xs" ? "text-[11px]" : "text-xs",
+      )}
+    >
+      <Icon className="size-3" />
+      {link.label}
+      <ExternalLink className="size-2.5 opacity-60" />
+    </a>
+  );
+}
 
 export const Route = createFileRoute("/_authenticated/trip/$id")({
   head: () => ({
@@ -351,6 +391,17 @@ function TripPage() {
             <Button size="sm" variant="outline" onClick={downloadIcs} className="text-xs">
               <CalendarPlus className="mr-1.5 size-3.5" /> {t.addToCalendar || "Add to Calendar"}
             </Button>
+            {plan.origin && (
+              <a
+                href={`https://www.google.com/travel/flights?q=flights+from+${encodeURIComponent(plan.origin.name)}+to+${encodeURIComponent(plan.destination.name)}+on+${plan.days[0]!.date}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-2.5 py-1 text-xs font-semibold text-primary transition-all hover:bg-primary/10"
+              >
+                <Plane className="size-3" /> Book Travel
+                <ExternalLink className="size-2.5 opacity-60" />
+              </a>
+            )}
             <Button
               size="sm"
               variant={live ? "default" : "outline"}
@@ -432,6 +483,32 @@ function TripPage() {
         )}
       </header>
 
+      {/* Inter-City Travel Booking */}
+      {plan.origin && (
+        <section
+          aria-label="Inter-city travel booking"
+          className="rounded-2xl border bg-card p-4 space-y-2.5"
+        >
+          <h2 className="font-display text-base font-bold text-foreground flex items-center gap-2">
+            <Navigation className="size-4 text-primary" />
+            {plan.origin.name} → {plan.destination.name}: Book Your Travel
+          </h2>
+          <p className="text-[11px] text-muted-foreground">
+            Opens the real booking platform — no simulated prices or fake confirmations.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {interCityBookingLinks(
+              plan.origin,
+              plan.destination,
+              plan.days[0]!.date,
+              plan.days.at(-1)!.date,
+            ).map((link) => (
+              <BookingButton key={link.type} link={link} size="sm" />
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Weather Forecast */}
       <section aria-label="Weather" className="rounded-2xl border bg-card p-4 space-y-2">
         <div className="flex items-center justify-between">
@@ -512,9 +589,22 @@ function TripPage() {
 
       {/* Recommended Hotel */}
       <section aria-label="Hotel" className="rounded-2xl border bg-card p-4 space-y-3">
-        <h2 className="font-display text-base font-bold text-foreground">
-          {t.recommendedHotel || "Recommended Hotel / Base"}
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="font-display text-base font-bold text-foreground">
+            {t.recommendedHotel || "Recommended Hotel / Base"}
+          </h2>
+          {hotel && (
+            <BookingButton
+              link={hotelBookingLink(
+                hotel.place.name,
+                plan.destination.name,
+                plan.days[0]!.date,
+                plan.days.at(-1)!.date,
+              )}
+              size="xs"
+            />
+          )}
+        </div>
         <div className="grid gap-3 sm:grid-cols-3">
           {plan.hotels.map((h, i) => (
             <button
@@ -687,35 +777,57 @@ function TripPage() {
 
                 {/* Available Vehicles / Transport Options */}
                 {leg && (
-                  <div className="mb-2.5 flex flex-wrap items-center gap-1.5 text-xs">
-                    <span className="text-[11px] font-semibold text-muted-foreground mr-1">
-                      Transport:
-                    </span>
-                    {leg.options.map((m) => (
-                      <button
-                        key={m.mode}
-                        disabled={busy}
-                        aria-pressed={leg.chosen === m.mode}
-                        onClick={() =>
-                          changeDay(
-                            (d) => ({
-                              ...d,
-                              legs: d.legs.map((l) => (l === leg ? { ...l, chosen: m.mode } : l)),
+                  <div className="mb-2.5 space-y-1.5">
+                    <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                      <span className="text-[11px] font-semibold text-muted-foreground mr-1">
+                        Transport:
+                      </span>
+                      {leg.options.map((m) => (
+                        <button
+                          key={m.mode}
+                          disabled={busy}
+                          aria-pressed={leg.chosen === m.mode}
+                          onClick={() =>
+                            changeDay(
+                              (d) => ({
+                                ...d,
+                                legs: d.legs.map((l) => (l === leg ? { ...l, chosen: m.mode } : l)),
                             }),
                             false,
-                          )
-                        }
-                        className={cn(
-                          "rounded-full border px-2.5 py-0.5 text-[11px] font-semibold transition-all",
-                          leg.chosen === m.mode
-                            ? "border-primary bg-primary text-primary-foreground shadow-2xs"
-                            : "bg-card text-muted-foreground hover:text-foreground",
-                        )}
-                      >
-                        {m.mode} · {m.minutes} min ({m.km.toFixed(1)} km)
-                        {m.cost != null ? ` · ${money(m.cost, cur)}` : ""}
-                      </button>
-                    ))}
+                          )}
+                          className={cn(
+                            "rounded-full border px-2.5 py-0.5 text-[11px] font-semibold transition-all",
+                            leg.chosen === m.mode
+                              ? "border-primary bg-primary text-primary-foreground shadow-2xs"
+                              : "bg-card text-muted-foreground hover:text-foreground",
+                          )}
+                        >
+                          {m.mode} · {m.minutes} min ({m.km.toFixed(1)} km)
+                          {m.cost != null ? ` · ${money(m.cost, cur)}` : ""}
+                        </button>
+                      ))}
+                    </div>
+                    {(() => {
+                      const fromPlace = i === 0 && hasHotel
+                        ? hotel?.place
+                        : i === 0
+                          ? day.slots[0]?.options[day.slots[0]!.chosen]!.place
+                          : day.slots[i - 1]?.options[day.slots[i - 1]!.chosen]!.place;
+                      const toPlace = o.place;
+                      const chosen = leg.options.find((opt) => opt.mode === leg.chosen);
+                      if (!fromPlace || !toPlace || !chosen) return null;
+                      const link = intraCityBookingLink(
+                        fromPlace.name,
+                        fromPlace.lat,
+                        fromPlace.lon,
+                        toPlace.name,
+                        toPlace.lat,
+                        toPlace.lon,
+                        chosen.mode,
+                      );
+                      if (!link) return null;
+                      return <BookingButton link={link} size="xs" />;
+                    })()}
                   </div>
                 )}
 
