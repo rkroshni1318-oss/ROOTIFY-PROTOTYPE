@@ -269,9 +269,12 @@ function TripPage() {
     setStayingAt(null);
     setForcedPlanBReason(null);
     setBusy(false);
-    toast.success(`${t.planBTriggered || "Plan B Applied"}: ${c.changed} stops adjusted for smooth travel!`, {
-      action: { label: "Undo", onClick: undo },
-    });
+    toast.success(
+      `${t.planBTriggered || "Plan B Applied"}: ${c.changed} stops adjusted for smooth travel!`,
+      {
+        action: { label: "Undo", onClick: undo },
+      },
+    );
   }
 
   if (err)
@@ -316,7 +319,10 @@ function TripPage() {
   return (
     <div className="space-y-6 pb-20">
       {offline && (
-        <p role="status" className="rounded-xl border bg-muted/40 p-2.5 text-xs text-muted-foreground">
+        <p
+          role="status"
+          className="rounded-xl border bg-muted/40 p-2.5 text-xs text-muted-foreground"
+        >
           Offline — showing your saved copy.
         </p>
       )}
@@ -458,7 +464,8 @@ function TripPage() {
               </span>
               {d.weather ? (
                 <span className="text-[11px] mt-0.5 block">
-                  {Math.round(d.weather.min)}°–{Math.round(d.weather.max)}°C · {d.weather.rain}% rain
+                  {Math.round(d.weather.min)}°–{Math.round(d.weather.max)}°C · {d.weather.rain}%
+                  rain
                   <br />
                   <span className="text-foreground">{d.weather.label}</span>
                 </span>
@@ -480,11 +487,14 @@ function TripPage() {
       <section aria-label="Budget" className="rounded-2xl border bg-card p-4 space-y-2.5">
         <div className="flex justify-between text-xs font-semibold">
           <span className="text-foreground">
-            {t.budgetSummary || "Budget Status"}: Spent {money(totalsData.total, cur)} of {money(input.budget, cur)}
+            {t.budgetSummary || "Budget Status"}: Spent {money(totalsData.total, cur)} of{" "}
+            {money(input.budget, cur)}
           </span>
           <span
             className={
-              totalsData.total > input.budget ? "text-destructive font-bold" : "text-emerald-600 font-bold"
+              totalsData.total > input.budget
+                ? "text-destructive font-bold"
+                : "text-emerald-600 font-bold"
             }
           >
             {totalsData.total > input.budget
@@ -494,8 +504,9 @@ function TripPage() {
         </div>
         <Progress value={spentPct} aria-label="Budget used" className="h-2" />
         <p className="text-[11px] text-muted-foreground">
-          Hotel {totalsData.hotelPriced ? money(totalsData.hotelCost, cur) : "included"} · Sightseeing entry fees{" "}
-          {money(totalsData.act, cur)} · Transport {money(totalsData.tr, cur)}.
+          Hotel {totalsData.hotelPriced ? money(totalsData.hotelCost, cur) : "included"} ·
+          Sightseeing entry fees {money(totalsData.act, cur)} · Transport{" "}
+          {money(totalsData.tr, cur)}.
         </p>
       </section>
 
@@ -519,10 +530,13 @@ function TripPage() {
             >
               <div className="flex items-start justify-between gap-1">
                 <span className="font-bold text-foreground leading-tight">{h.place.name}</span>
-                {i === plan.hotelChoice && <CheckCircle2 className="size-4 text-primary shrink-0" />}
+                {i === plan.hotelChoice && (
+                  <CheckCircle2 className="size-4 text-primary shrink-0" />
+                )}
               </div>
               <span className="block text-[11px] text-muted-foreground mt-1">
-                {h.place.rating ? `★ ${h.place.rating}` : "Rated"} · {h.place.price ?? "Verified rates"}
+                {h.place.rating ? `★ ${h.place.rating}` : "Rated"} ·{" "}
+                {h.place.price ?? "Verified rates"}
               </span>
               <span className="block text-[11px] text-primary/80 mt-1">{h.reason}</span>
             </button>
@@ -585,7 +599,10 @@ function TripPage() {
           </div>
 
           {trigger && triggerKey !== dismissed && (
-            <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 space-y-3" role="alert">
+            <div
+              className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 space-y-3"
+              role="alert"
+            >
               <div className="flex items-center gap-2 font-bold text-amber-600 text-sm">
                 <AlertTriangle className="size-4" />
                 {t.planBTriggered || "Plan B Activated"}: {trigger.reason}
@@ -609,7 +626,8 @@ function TripPage() {
                       </Badge>
                     </div>
                     <p className="mt-1 text-muted-foreground">
-                      {c.reason} · {c.changed} stops adjusted · +{c.timeDelta} min · {money(c.costDelta, cur)}
+                      {c.reason} · {c.changed} stops adjusted · +{c.timeDelta} min ·{" "}
+                      {money(c.costDelta, cur)}
                     </p>
 
                     {c.rejected ? (
@@ -721,7 +739,8 @@ function TripPage() {
                         ) : null}
                       </h3>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        {place.address || `${place.distanceKm.toFixed(1)} km from destination center`}
+                        {place.address ||
+                          `${place.distanceKm.toFixed(1)} km from destination center`}
                       </p>
                     </div>
 
@@ -757,7 +776,9 @@ function TripPage() {
                     </div>
                     <div className="rounded-lg bg-surface p-2 border">
                       <span className="text-[10px] text-muted-foreground block">Entry Fee</span>
-                      <span className="font-bold text-foreground">{place.price || "Free Entry"}</span>
+                      <span className="font-bold text-foreground">
+                        {place.price || "Free Entry"}
+                      </span>
                     </div>
                     <div className="rounded-lg bg-surface p-2 border">
                       <span className="text-[10px] text-muted-foreground block">Category</span>

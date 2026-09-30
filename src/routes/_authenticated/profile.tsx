@@ -34,7 +34,7 @@ import {
   Users,
   X,
 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -149,23 +149,14 @@ export function ProfilePage() {
   const navigate = useNavigate();
 
   // Name & Avatar Edit State
-  const initialName = displayName(session);
   const [editingName, setEditingName] = useState(false);
-  const [userName, setUserName] = useState(initialName);
-  const [avatarUrl, setAvatarUrl] = useState(
-    () =>
-      (typeof window !== "undefined" && localStorage.getItem("rootify_user_avatar")) ||
-      PRESET_AVATARS[0]!.url,
-  );
+  const [userName, setUserName] = useState("Traveller");
+  const [avatarUrl, setAvatarUrl] = useState(PRESET_AVATARS[0]!.url);
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
 
   // Theme State
-  const [theme, setTheme] = useState<"light" | "dark">(() => {
-    if (typeof window !== "undefined") {
-      return (localStorage.getItem("rootify_theme") as "light" | "dark") || "light";
-    }
-    return "light";
-  });
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const themeMounted = useRef(false);
 
   // Settings State
   const [tempUnit, setTempUnit] = useState<"C" | "F">("C");
@@ -175,19 +166,7 @@ export function ProfilePage() {
   const [notifyDeals, setNotifyDeals] = useState(false);
 
   // Tickets Booking System
-  const [tickets, setTickets] = useState<TravelTicket[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("rootify_booked_tickets");
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch {
-          // ignore
-        }
-      }
-    }
-    return INITIAL_TICKETS;
-  });
+  const [tickets, setTickets] = useState<TravelTicket[]>(INITIAL_TICKETS);
 
   const [bookingMode, setBookingMode] = useState<"Flight" | "Train" | "Bus" | "Metro">("Flight");
   const [ticketFrom, setTicketFrom] = useState("London (LHR)");
@@ -206,6 +185,28 @@ export function ProfilePage() {
   ]);
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      setUserName(displayName(session));
+      const savedAvatar = localStorage.getItem("rootify_user_avatar");
+      if (savedAvatar) setAvatarUrl(savedAvatar);
+      const savedTheme = localStorage.getItem("rootify_theme") as "light" | "dark";
+      if (savedTheme) setTheme(savedTheme);
+      const savedTickets = localStorage.getItem("rootify_booked_tickets");
+      if (savedTickets) {
+        try {
+          setTickets(JSON.parse(savedTickets));
+        } catch {
+          // ignore
+        }
+      }
+    }
+  }, [session]);
+
+  useEffect(() => {
+    if (!themeMounted.current) {
+      themeMounted.current = true;
+      return;
+    }
     if (theme === "dark") {
       document.documentElement.classList.add("dark");
     } else {

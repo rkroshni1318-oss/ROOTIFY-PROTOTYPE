@@ -158,6 +158,17 @@ export interface Translations {
   themeToggle: string;
   darkMode: string;
   lightMode: string;
+  darkTheme: string;
+  lightTheme: string;
+  travelTickets: string;
+  addToCalendar: string;
+  undoLastChange: string;
+  noPlansDesc: string;
+  totalBudget: string;
+  selectDestinationPrompt: string;
+  tripSavedSuccessfully: string;
+  multipleOptionsTitle: string;
+  chooseThisPlan: string;
   logout: string;
 }
 
@@ -312,6 +323,17 @@ const DICTIONARY: Record<Language, Translations> = {
     themeToggle: "Theme Mode",
     darkMode: "Dark Mode",
     lightMode: "Light Mode",
+    darkTheme: "Dark Theme",
+    lightTheme: "Light Theme",
+    travelTickets: "Confirmed Travel Tickets",
+    addToCalendar: "Add to Calendar",
+    undoLastChange: "Undo Last Change",
+    noPlansDesc: "Create your first day-by-day travel plan and see it here.",
+    totalBudget: "Total Budget",
+    selectDestinationPrompt: "Please enter a destination to build your travel plan.",
+    tripSavedSuccessfully: "Trip plan saved successfully!",
+    multipleOptionsTitle: "Choose Your Preferred Itinerary Option",
+    chooseThisPlan: "Choose This Plan",
     logout: "Log Out",
   },
 
@@ -401,7 +423,8 @@ const DICTIONARY: Record<Language, Translations> = {
     continueWithGoogle: "Google மூலம் தொடரவும்",
     exploreAsGuest: "விருந்தினராக உடனடியாக ஆராயுங்கள்",
     checkYourEmail: "உங்கள் மின்னஞ்சலைச் சரிபார்க்கவும்",
-    checkEmailDesc: "உங்கள் மின்னஞ்சலுக்கு கடவுச்சொல் இல்லாத உறுதிப்படுத்தல் இணைப்பு அனுப்பப்பட்டுள்ளது.",
+    checkEmailDesc:
+      "உங்கள் மின்னஞ்சலுக்கு கடவுச்சொல் இல்லாத உறுதிப்படுத்தல் இணைப்பு அனுப்பப்பட்டுள்ளது.",
     enterDirectly: "நேரடியாக உள்ளே செல்லவும் (டெமோ)",
     changeEmailBack: "மின்னஞ்சலை மாற்று / பின்செல்",
 
@@ -445,7 +468,8 @@ const DICTIONARY: Record<Language, Translations> = {
     adjustedTimetable: "சீரமைக்கப்பட்ட கால அட்டவணை",
 
     selectItineraryOption: "உங்கள் பயண பாணியைத் தேர்வுசெய்க",
-    comparingOptions: "உங்கள் விருப்பங்களுக்கு ஏற்ப உருவாக்கப்பட்ட பல திட்டங்களை ஒப்பிட்டுப் பாருங்கள்",
+    comparingOptions:
+      "உங்கள் விருப்பங்களுக்கு ஏற்ப உருவாக்கப்பட்ட பல திட்டங்களை ஒப்பிட்டுப் பாருங்கள்",
     planOption: "விருப்பம்",
     selectThisPlan: "இந்தத் திட்டத்தைத் தேர்ந்தெடு",
     activeSelectedOption: "தேர்ந்தெடுக்கப்பட்ட திட்டம்",
@@ -465,6 +489,17 @@ const DICTIONARY: Record<Language, Translations> = {
     themeToggle: "தோற்ற முறை",
     darkMode: "இருண்ட பயன்முறை",
     lightMode: "வெளிச்சப் பயன்முறை",
+    darkTheme: "இருண்ட தீம்",
+    lightTheme: "வெளிச்ச தீம்",
+    travelTickets: "உறுதிசெய்யப்பட்ட பயண டிக்கெட்டுகள்",
+    addToCalendar: "கேலெண்டரில் சேர்",
+    undoLastChange: "கடைசி மாற்றத்தை செயல்தவிர்",
+    noPlansDesc: "உங்கள் முதல் நாள் வாரியான பயணத் திட்டத்தை உருவாக்கி இங்கு காண்க.",
+    totalBudget: "மொத்த பட்ஜெட்",
+    selectDestinationPrompt: "பயணத் திட்டத்தை உருவாக்க இலக்கை உள்ளிடவும்.",
+    tripSavedSuccessfully: "பயணத் திட்டம் வெற்றிகரமாகச் சேமிக்கப்பட்டது!",
+    multipleOptionsTitle: "உங்கள் விருப்பமான பயணத் திட்டத்தைத் தேர்வுசெய்க",
+    chooseThisPlan: "இந்தத் திட்டத்தைத் தேர்வுசெய்க",
     logout: "வெளியேறு",
   },
 
@@ -618,6 +653,17 @@ const DICTIONARY: Record<Language, Translations> = {
     themeToggle: "थीम मोड",
     darkMode: "डार्क मोड",
     lightMode: "लाइट मोड",
+    darkTheme: "डार्क थीम",
+    lightTheme: "लाइट थीम",
+    travelTickets: "कन्फ़र्म यात्रा टिकट",
+    addToCalendar: "कैलेंडर में जोड़ें",
+    undoLastChange: "अंतिम बदलाव पूर्ववत करें",
+    noPlansDesc: "अपनी पहली दिन-वार यात्रा योजना बनाएं और यहां देखें।",
+    totalBudget: "कुल बजट",
+    selectDestinationPrompt: "यात्रा योजना बनाने के लिए कृपया गंतव्य दर्ज करें।",
+    tripSavedSuccessfully: "यात्रा योजना सफलतापूर्वक सहेजी गई!",
+    multipleOptionsTitle: "अपनी पसंदीदा यात्रा योजना का विकल्प चुनें",
+    chooseThisPlan: "यह योजना चुनें",
     logout: "लॉग आउट",
   },
 };

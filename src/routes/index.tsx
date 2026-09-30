@@ -334,15 +334,42 @@ function AuthPage() {
 
         {/* Right Column: Sign In Card */}
         <div className="lg:col-span-5">
-          <Card className="relative overflow-hidden rounded-2xl border bg-card p-6 shadow-xl sm:p-8">
+          <Card className="relative overflow-hidden rounded-3xl border bg-card p-6 shadow-xl sm:p-8">
+            {/* Visual Hierarchy: Logo → Rootify name → Tagline → Language selection */}
             <div className="mb-6 text-center">
-              <Badge size={72} className="mx-auto shadow-md" />
-              <h2 className="mt-4 font-display text-2xl font-bold text-foreground">
-                {t.welcomeToRootify}
-              </h2>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {t.welcomeSubtitle}
+              <Badge size={110} className="mx-auto shadow-lg ring-4 ring-primary/20 object-cover" />
+              <h1 className="mt-3.5 font-display text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl">
+                Rootify
+              </h1>
+              <p className="mt-1 text-xs font-medium text-muted-foreground sm:text-sm whitespace-normal sm:whitespace-nowrap">
+                Rewrite the Road. Fix the Journey.
               </p>
+
+              {/* Language selection with clean spacing */}
+              <div className="mt-4 flex justify-center">
+                <div className="inline-flex rounded-full border bg-muted/60 p-1 text-xs shadow-2xs">
+                  {(
+                    [
+                      { code: "en", label: "English" },
+                      { code: "hi", label: "हिन्दी" },
+                      { code: "ta", label: "தமிழ்" },
+                    ] as const
+                  ).map((lang) => (
+                    <button
+                      key={lang.code}
+                      type="button"
+                      onClick={() => setLanguage(lang.code as Language)}
+                      className={`rounded-full px-3 py-1 text-xs font-semibold transition-all ${
+                        language === lang.code
+                          ? "bg-primary text-primary-foreground shadow-xs"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {lang.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
 
             {emailSent ? (
@@ -355,9 +382,7 @@ function AuthPage() {
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-foreground">{t.checkYourEmail}</h3>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {t.checkEmailDesc}
-                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">{t.checkEmailDesc}</p>
                   <p className="mt-1 text-xs font-semibold text-primary">{email}</p>
                 </div>
 
@@ -412,9 +437,7 @@ function AuthPage() {
                     onChange={(e) => setEmail(e.target.value)}
                     className="h-11 bg-surface text-sm"
                   />
-                  <p className="text-[11px] text-muted-foreground">
-                    {t.welcomeSubtitle}
-                  </p>
+                  <p className="text-[11px] text-muted-foreground">{t.welcomeSubtitle}</p>
                 </div>
 
                 {error && (

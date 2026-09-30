@@ -62,26 +62,26 @@ export type TourGuideContact = {
 export type Place = {
   id: string;
   name: string;
-  localName?: string | null;
+  localName?: string | null | undefined;
   category: Category;
   lat: number;
   lon: number;
-  address?: string | null;
-  rating?: number | null;
-  ratingCount?: number | null;
-  price?: string | null; // only real listed fees
-  hoursText?: string[] | null;
-  periods?: OpeningPeriod[] | null;
+  address?: string | null | undefined;
+  rating?: number | null | undefined;
+  ratingCount?: number | null | undefined;
+  price?: string | null | undefined; // only real listed fees
+  hoursText?: string[] | null | undefined;
+  periods?: OpeningPeriod[] | null | undefined;
   wheelchair: boolean | null; // null = not verified
   outdoor: boolean;
   source: "google" | "osm";
   mapsUrl: string;
   distanceKm: number; // from destination centre
-  dayTrip?: boolean;
-  photoUrl?: string | null;
-  preview3dUrl?: string | null;
-  phone?: string | null;
-  tourGuideContact?: TourGuideContact | null;
+  dayTrip?: boolean | undefined;
+  photoUrl?: string | null | undefined;
+  preview3dUrl?: string | null | undefined;
+  phone?: string | null | undefined;
+  tourGuideContact?: TourGuideContact | null | undefined;
 };
 
 export type TravelTicket = {

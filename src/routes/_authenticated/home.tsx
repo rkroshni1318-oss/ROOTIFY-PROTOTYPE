@@ -124,6 +124,7 @@ export function HomePage() {
   const { t } = useI18n();
   const navigate = useNavigate();
 
+  const [mounted, setMounted] = useState(false);
   const [now, setNow] = useState<Date>(new Date());
   const [trips, setTrips] = useState<TripRow[]>([]);
   const [loadingTrips, setLoadingTrips] = useState(true);
@@ -135,24 +136,25 @@ export function HomePage() {
   const [aiBusy, setAiBusy] = useState(false);
 
   useEffect(() => {
-    let mounted = true;
+    setMounted(true);
+    let active = true;
     const interval = setInterval(() => {
-      if (mounted) setNow(new Date());
+      if (active) setNow(new Date());
     }, 1000);
 
     listTrips()
       .then((r) => {
-        if (mounted) {
+        if (active) {
           setTrips(r.rows);
           setLoadingTrips(false);
         }
       })
       .catch(() => {
-        if (mounted) setLoadingTrips(false);
+        if (active) setLoadingTrips(false);
       });
 
     return () => {
-      mounted = false;
+      active = false;
       clearInterval(interval);
     };
   }, []);
@@ -206,7 +208,7 @@ export function HomePage() {
     }
   }
 
-  const userDisplayName = displayName(session);
+  const userDisplayName = mounted ? displayName(session) : "Traveller";
 
   return (
     <div className="space-y-8 pb-12">
@@ -227,12 +229,18 @@ export function HomePage() {
           <div className="flex flex-wrap items-center gap-2">
             <span className="flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3.5 py-1 text-xs font-semibold backdrop-blur-md">
               <Clock className="size-3.5 text-amber-300" />
-              {now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} ·{" "}
-              {now.toLocaleDateString(undefined, {
-                weekday: "long",
-                month: "short",
-                day: "numeric",
-              })}
+              {mounted ? (
+                <>
+                  {now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} ·{" "}
+                  {now.toLocaleDateString(undefined, {
+                    weekday: "long",
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </>
+              ) : (
+                <span>Live Travel Time</span>
+              )}
             </span>
             <span className="rounded-full bg-linear-to-r from-amber-400 to-amber-500 px-3 py-1 text-[11px] font-extrabold uppercase tracking-wider text-black shadow-md">
               {t.globalEdition}
@@ -241,7 +249,7 @@ export function HomePage() {
 
           <div className="space-y-1">
             <h1 className="font-display text-3xl font-extrabold tracking-tight sm:text-5xl text-white drop-shadow-md">
-              {greetingFor(now)}, {userDisplayName}!
+              {mounted ? `${greetingFor(now)}, ${userDisplayName}!` : "Welcome, Traveller!"}
             </h1>
             <p className="text-sm font-medium leading-relaxed text-white/90 sm:text-base max-w-xl drop-shadow-sm">
               {t.tagline}
@@ -290,9 +298,7 @@ export function HomePage() {
               <Compass className="size-6 text-primary" />
               {t.activeItineraries}
             </h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {t.selectItineraryOption}
-            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">{t.selectItineraryOption}</p>
           </div>
 
           <Button asChild size="sm" variant="outline">
@@ -318,7 +324,8 @@ export function HomePage() {
               {t.noPlansYet || "No travel plans created yet"}
             </h3>
             <p className="mx-auto mt-1 max-w-sm text-xs text-muted-foreground">
-              {t.noPlansDesc || "Create your first plan for any destination in the world with real opening hours, weather replanning, and transport routes."}
+              {t.noPlansDesc ||
+                "Create your first plan for any destination in the world with real opening hours, weather replanning, and transport routes."}
             </p>
             <div className="mt-4">
               <Button asChild>
@@ -375,7 +382,9 @@ export function HomePage() {
 
                     <div className="grid grid-cols-2 gap-2 pt-2 text-xs">
                       <div className="rounded-lg bg-surface p-2 border">
-                        <span className="text-[11px] text-muted-foreground block">{t.totalBudget || "Duration"}</span>
+                        <span className="text-[11px] text-muted-foreground block">
+                          {t.totalBudget || "Duration"}
+                        </span>
                         <span className="font-bold text-foreground">
                           {daysCount} {daysCount > 1 ? "Days" : "Day"} · {totalStops} Stops
                         </span>

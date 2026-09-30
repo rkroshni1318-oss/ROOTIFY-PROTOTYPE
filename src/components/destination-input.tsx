@@ -8,7 +8,15 @@ import type { GeoPlace } from "@/lib/travel-types";
 import { cn } from "@/lib/utils";
 
 export function placeLabel(p: GeoPlace) {
-  return [p.name, p.admin1, p.country].filter(Boolean).join(", ");
+  const parts: string[] = [];
+  if (p.name) parts.push(p.name);
+  if (p.admin1 && !parts.some((x) => x.toLowerCase() === p.admin1?.toLowerCase())) {
+    parts.push(p.admin1);
+  }
+  if (p.country && !parts.some((x) => x.toLowerCase() === p.country?.toLowerCase())) {
+    parts.push(p.country);
+  }
+  return parts.join(", ");
 }
 
 export function DestinationInput({

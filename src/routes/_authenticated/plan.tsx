@@ -1,7 +1,24 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { differenceInCalendarDays, format } from "date-fns";
-import { Check, CheckCircle2, ChevronRight, Clock, Compass, DollarSign, Flame, Landmark, Loader2, MapPin, Palmtree, ShieldCheck, ShoppingBag, Sparkles, Star, Utensils } from "lucide-react";
+import {
+  Check,
+  CheckCircle2,
+  ChevronRight,
+  Clock,
+  Compass,
+  DollarSign,
+  Flame,
+  Landmark,
+  Loader2,
+  MapPin,
+  Palmtree,
+  ShieldCheck,
+  ShoppingBag,
+  Sparkles,
+  Star,
+  Utensils,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -205,15 +222,12 @@ function PlanForm() {
               {multipleOptions.length} Tailored Plans for {dest?.name}
             </h1>
             <p className="text-xs text-muted-foreground">
-              {t.selectItineraryOption || "Select the plan style that matches your travel preferences. Each option includes hour-by-hour timetables, transport, and live Plan B."}
+              {t.selectItineraryOption ||
+                "Select the plan style that matches your travel preferences. Each option includes hour-by-hour timetables, transport, and live Plan B."}
             </p>
           </div>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setMultipleOptions(null)}
-          >
+          <Button variant="outline" size="sm" onClick={() => setMultipleOptions(null)}>
             ← Modify Inputs
           </Button>
         </div>
@@ -263,16 +277,12 @@ function PlanForm() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b pb-4">
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="font-display text-xl font-bold text-foreground">
-                  {chosen.title}
-                </h2>
+                <h2 className="font-display text-xl font-bold text-foreground">{chosen.title}</h2>
                 <Badge className="bg-primary/10 text-primary border-primary/20">
                   {chosen.planStyle}
                 </Badge>
               </div>
-              <p className="text-xs text-muted-foreground mt-0.5 max-w-xl">
-                {chosen.description}
-              </p>
+              <p className="text-xs text-muted-foreground mt-0.5 max-w-xl">{chosen.description}</p>
             </div>
 
             <Button
@@ -310,7 +320,9 @@ function PlanForm() {
                       Day {dIdx + 1} · {day.date}
                     </span>
                     <span className="text-muted-foreground">
-                      {day.weather ? `${day.weather.max}°C · ${day.weather.label}` : "Weather Forecast Ready"}
+                      {day.weather
+                        ? `${day.weather.max}°C · ${day.weather.label}`
+                        : "Weather Forecast Ready"}
                     </span>
                   </div>
 
@@ -324,13 +336,17 @@ function PlanForm() {
                           className="rounded-xl border bg-card p-2.5 text-xs space-y-1 shadow-2xs"
                         >
                           <div className="flex items-center justify-between text-[11px] font-semibold text-primary">
-                            <span>{s.start} - {s.end}</span>
+                            <span>
+                              {s.start} - {s.end}
+                            </span>
                             <span>{s.label}</span>
                           </div>
                           <p className="font-bold text-foreground truncate">{place.name}</p>
                           <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-0.5">
                             <span>{place.category}</span>
-                            <span className="font-medium text-foreground">{place.price || "Free entry"}</span>
+                            <span className="font-medium text-foreground">
+                              {place.price || "Free entry"}
+                            </span>
                           </div>
                         </div>
                       );
@@ -352,9 +368,7 @@ function PlanForm() {
           <Compass className="size-8 text-primary" />
           {t.createPlan}
         </h1>
-        <p className="text-xs text-muted-foreground mt-1">
-          {t.planYourJourney}
-        </p>
+        <p className="text-xs text-muted-foreground mt-1">{t.planYourJourney}</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -398,14 +412,22 @@ function PlanForm() {
 
       {days > 0 && (
         <div className="rounded-xl border bg-primary/5 px-4 py-2 text-xs font-semibold text-primary flex items-center justify-between">
-          <span>{days} {days > 1 ? "Days Journey" : "Day Journey"}</span>
-          <span>{days >= 2 ? "Generates 4 distinct complete itinerary options" : "Hour-by-hour verified timetable"}</span>
+          <span>
+            {days} {days > 1 ? "Days Journey" : "Day Journey"}
+          </span>
+          <span>
+            {days >= 2
+              ? "Generates 4 distinct complete itinerary options"
+              : "Hour-by-hour verified timetable"}
+          </span>
         </div>
       )}
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <Label htmlFor="ds" className="text-xs font-semibold">{t.startTime || "Day starts"}</Label>
+          <Label htmlFor="ds" className="text-xs font-semibold">
+            {t.startTime || "Day starts"}
+          </Label>
           <Input
             id="ds"
             type="time"
@@ -415,7 +437,9 @@ function PlanForm() {
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="de" className="text-xs font-semibold">{t.endTime || "Day ends"}</Label>
+          <Label htmlFor="de" className="text-xs font-semibold">
+            {t.endTime || "Day ends"}
+          </Label>
           <Input
             id="de"
             type="time"
@@ -428,7 +452,9 @@ function PlanForm() {
 
       <div className="grid grid-cols-[1fr_7rem] gap-4">
         <div className="space-y-1.5">
-          <Label htmlFor="bd" className="text-xs font-semibold">{t.budget}</Label>
+          <Label htmlFor="bd" className="text-xs font-semibold">
+            {t.budget}
+          </Label>
           <Input
             id="bd"
             type="number"
@@ -439,7 +465,9 @@ function PlanForm() {
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="cur" className="text-xs font-semibold">Currency</Label>
+          <Label htmlFor="cur" className="text-xs font-semibold">
+            Currency
+          </Label>
           <select
             id="cur"
             value={currency}

@@ -30,6 +30,169 @@ function gatewayHeaders(extra: Record<string, string> = {}) {
 }
 
 /* ---------------- Geocoding ---------------- */
+const INSTANT_DESTINATIONS: GeoPlace[] = [
+  {
+    id: "geo_marina_beach",
+    name: "Marina Beach",
+    admin1: "Chennai, Tamil Nadu",
+    country: "India",
+    countryCode: "IN",
+    lat: 13.05,
+    lon: 80.2824,
+    timezone: "Asia/Kolkata",
+  },
+  {
+    id: "geo_chennai",
+    name: "Chennai",
+    admin1: "Tamil Nadu",
+    country: "India",
+    countryCode: "IN",
+    lat: 13.0827,
+    lon: 80.2707,
+    timezone: "Asia/Kolkata",
+  },
+  {
+    id: "geo_mahabalipuram",
+    name: "Mahabalipuram",
+    admin1: "Chengalpattu, Tamil Nadu",
+    country: "India",
+    countryCode: "IN",
+    lat: 12.6269,
+    lon: 80.1927,
+    timezone: "Asia/Kolkata",
+  },
+  {
+    id: "geo_ooty",
+    name: "Ooty",
+    admin1: "Nilgiris, Tamil Nadu",
+    country: "India",
+    countryCode: "IN",
+    lat: 11.4102,
+    lon: 76.695,
+    timezone: "Asia/Kolkata",
+  },
+  {
+    id: "geo_kerala",
+    name: "Kerala",
+    admin1: "Kochi",
+    country: "India",
+    countryCode: "IN",
+    lat: 9.9312,
+    lon: 76.2673,
+    timezone: "Asia/Kolkata",
+  },
+  {
+    id: "geo_goa",
+    name: "Goa",
+    admin1: "Panaji",
+    country: "India",
+    countryCode: "IN",
+    lat: 15.4909,
+    lon: 73.8278,
+    timezone: "Asia/Kolkata",
+  },
+  {
+    id: "geo_maldives",
+    name: "Maldives",
+    admin1: "Kaafu Atoll",
+    country: "Maldives",
+    countryCode: "MV",
+    lat: 4.1755,
+    lon: 73.5093,
+    timezone: "Indian/Maldives",
+  },
+  {
+    id: "geo_thailand",
+    name: "Thailand",
+    admin1: "Bangkok",
+    country: "Thailand",
+    countryCode: "TH",
+    lat: 13.7563,
+    lon: 100.5018,
+    timezone: "Asia/Bangkok",
+  },
+  {
+    id: "geo_singapore",
+    name: "Singapore",
+    admin1: "Central Region",
+    country: "Singapore",
+    countryCode: "SG",
+    lat: 1.3521,
+    lon: 103.8198,
+    timezone: "Asia/Singapore",
+  },
+  {
+    id: "geo_dubai",
+    name: "Dubai",
+    admin1: "Dubai",
+    country: "United Arab Emirates",
+    countryCode: "AE",
+    lat: 25.2048,
+    lon: 55.2708,
+    timezone: "Asia/Dubai",
+  },
+  {
+    id: "geo_paris",
+    name: "Paris",
+    admin1: "Île-de-France",
+    country: "France",
+    countryCode: "FR",
+    lat: 48.8566,
+    lon: 2.3522,
+    timezone: "Europe/Paris",
+  },
+  {
+    id: "geo_london",
+    name: "London",
+    admin1: "Greater London",
+    country: "United Kingdom",
+    countryCode: "GB",
+    lat: 51.5074,
+    lon: -0.1278,
+    timezone: "Europe/London",
+  },
+  {
+    id: "geo_tokyo",
+    name: "Tokyo",
+    admin1: "Kanto",
+    country: "Japan",
+    countryCode: "JP",
+    lat: 35.6762,
+    lon: 139.6503,
+    timezone: "Asia/Tokyo",
+  },
+  {
+    id: "geo_kodaikanal",
+    name: "Kodaikanal",
+    admin1: "Dindigul, Tamil Nadu",
+    country: "India",
+    countryCode: "IN",
+    lat: 10.2381,
+    lon: 77.4892,
+    timezone: "Asia/Kolkata",
+  },
+  {
+    id: "geo_madurai",
+    name: "Madurai",
+    admin1: "Tamil Nadu",
+    country: "India",
+    countryCode: "IN",
+    lat: 9.9252,
+    lon: 78.1198,
+    timezone: "Asia/Kolkata",
+  },
+  {
+    id: "geo_bihar",
+    name: "Bihar",
+    admin1: "Patna",
+    country: "India",
+    countryCode: "IN",
+    lat: 25.0961,
+    lon: 85.3131,
+    timezone: "Asia/Kolkata",
+  },
+];
+
 export async function geocode(q: string, lang = "en"): Promise<GeoPlace[]> {
   const cleanQ = q.trim();
   if (cleanQ.length < 2) return [];
@@ -37,32 +200,44 @@ export async function geocode(q: string, lang = "en"): Promise<GeoPlace[]> {
   const list: GeoPlace[] = [];
   const seen = new Set<string>();
 
-  // 1. Try Nominatim OpenStreetMap Geocoding (super accurate for states like Bihar, villages, and landmarks worldwide)
+  // 1. Check instant verified list for exact or partial matches
+  const lowerQ = cleanQ.toLowerCase();
+  for (const item of INSTANT_DESTINATIONS) {
+    if (
+      item.name.toLowerCase().includes(lowerQ) ||
+      lowerQ.includes(item.name.toLowerCase()) ||
+      (item.admin1 && item.admin1.toLowerCase().includes(lowerQ))
+    ) {
+      const key = `${item.name.toLowerCase()}-${item.country.toLowerCase()}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        list.push(item);
+      }
+    }
+  }
+
+  // 2. Query Photon Komoot Geocoder (super fast, covers beaches, landmarks, sights, and countries worldwide)
   try {
-    const nomRes = await fetch(
-      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cleanQ)}&format=json&addressdetails=1&limit=6`,
-      {
-        headers: {
-          "User-Agent": "Rootify/1.0",
-          "Accept-Language": lang === "ta" ? "ta,en" : lang === "hi" ? "hi,en" : "en",
-        },
-      },
+    const photonRes = await fetch(
+      `https://photon.komoot.io/api/?q=${encodeURIComponent(cleanQ)}&limit=6`,
+      { signal: AbortSignal.timeout(3500) },
     );
-    if (nomRes.ok) {
-      const items = (await nomRes.json()) as any[];
-      for (const item of items) {
-        const lat = parseFloat(item.lat);
-        const lon = parseFloat(item.lon);
-        if (isNaN(lat) || isNaN(lon)) continue;
-        const name = item.name || item.display_name.split(",")[0]?.trim();
-        const admin1 = item.address?.state || item.address?.county || item.address?.region || null;
-        const country = item.address?.country || "";
-        const countryCode = item.address?.country_code?.toUpperCase() || null;
+    if (photonRes.ok) {
+      const data = (await photonRes.json()) as any;
+      for (const feat of data.features ?? []) {
+        const coords = feat.geometry?.coordinates;
+        if (!coords || coords.length < 2) continue;
+        const [lon, lat] = coords;
+        const p = feat.properties ?? {};
+        const name = p.name || p.city || p.state || cleanQ;
+        const admin1 = p.state || p.city || p.district || null;
+        const country = p.country || "";
+        const countryCode = p.countrycode?.toUpperCase() || null;
         const key = `${name.toLowerCase()}-${country.toLowerCase()}`;
         if (!seen.has(key)) {
           seen.add(key);
           list.push({
-            id: `nom:${item.place_id}`,
+            id: `pho:${feat.properties?.osm_id || Math.random()}`,
             name,
             admin1,
             country,
@@ -75,13 +250,14 @@ export async function geocode(q: string, lang = "en"): Promise<GeoPlace[]> {
       }
     }
   } catch {
-    // Fall back to Open-Meteo
+    // fallback to Open-Meteo
   }
 
-  // 2. Query Open-Meteo geocoding to complement
+  // 3. Query Open-Meteo geocoding for cities and administrative areas
   try {
     const r = await fetch(
       `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cleanQ)}&count=8&language=${lang}&format=json`,
+      { signal: AbortSignal.timeout(3500) },
     );
     if (r.ok) {
       const j = (await r.json()) as { results?: any[] };
@@ -1235,7 +1411,7 @@ export async function buildPlan(input: TripInput): Promise<TripPlan> {
       if (toMin(t.start) < dayStart || toMin(t.end) > dayEnd) continue;
       const cat: Category = t.kind === "food" ? "Food" : assigned[ai++]!;
       const pool = pools.get(cat) ?? [];
-      const candidates = pool
+      let candidates = pool
         .filter((p) => !used.has(p.id) && isOpenAt(p, date, t.start, t.end))
         .map((p) => ({
           p,
@@ -1247,14 +1423,52 @@ export async function buildPlan(input: TripInput): Promise<TripPlan> {
         }))
         .sort((a, b) => b.s - a.s)
         .slice(0, 3);
+
+      // Fallback 1: If no unused place in this exact category, look in other activity pools
+      if (!candidates.length && t.kind !== "food") {
+        for (const altCat of actCats) {
+          if (altCat === cat) continue;
+          const altPool = pools.get(altCat) ?? [];
+          const altCandidates = altPool
+            .filter((p) => !used.has(p.id) && isOpenAt(p, date, t.start, t.end))
+            .map((p) => ({
+              p,
+              s: score(p) - haversineKm(prev, p) * 1.5,
+            }))
+            .sort((a, b) => b.s - a.s)
+            .slice(0, 3);
+          if (altCandidates.length) {
+            candidates = altCandidates;
+            break;
+          }
+        }
+      }
+
+      // Fallback 2: Check any remaining unused places across all non-hotel categories
+      if (!candidates.length && t.kind !== "food") {
+        const allActivityPlaces = Array.from(pools.entries())
+          .filter(([k]) => k !== "Hotels" && k !== "Food")
+          .flatMap(([, v]) => v);
+        candidates = allActivityPlaces
+          .filter((p) => !used.has(p.id))
+          .map((p) => ({ p, s: score(p) - haversineKm(prev, p) * 1.5 }))
+          .sort((a, b) => b.s - a.s)
+          .slice(0, 3);
+      }
+
+      // Fallback 3: If all pool places have been used across multi-day trips, allow top-rated places to be visited
+      if (!candidates.length && pool.length > 0) {
+        candidates = pool
+          .slice(0, 3)
+          .map((p) => ({ p, s: score(p) - haversineKm(prev, p) * 1.5 }))
+          .sort((a, b) => b.s - a.s);
+      }
+
       if (!candidates.length) {
-        notices.push(
-          `Day ${di + 1}: no more unused ${cat === "Other" ? input.otherInterest : cat} places were found for ${t.label.toLowerCase()}.`,
-        );
         continue;
       }
+
       const options: SlotOption[] = candidates.map(({ p }) => {
-        used.add(p.id);
         const reasons: string[] = [];
         if (cat === "Other") reasons.push(`matches “${input.otherInterest}”`);
         else if (t.kind === "act")
@@ -1281,6 +1495,10 @@ export async function buildPlan(input: TripInput): Promise<TripPlan> {
           nearby: [],
         };
       });
+
+      // ONLY mark the chosen primary stop as used so subsequent days have plenty of options!
+      used.add(options[0]!.place.id);
+
       prev = options[0]!.place;
       slots.push({
         key: t.key,
@@ -1296,7 +1514,7 @@ export async function buildPlan(input: TripInput): Promise<TripPlan> {
             : null,
       });
     }
-    // nearby from leftovers
+    // nearby from leftovers without consuming them from the main candidate pool
     const all = Array.from(pools.values()).flat();
     for (const s of slots) {
       const base = s.options[s.chosen]!.place;
@@ -1306,7 +1524,6 @@ export async function buildPlan(input: TripInput): Promise<TripPlan> {
         .filter((x) => x.meters <= 2000)
         .sort((a, b) => a.meters - b.meters)
         .slice(0, 3);
-      s.options[s.chosen]!.nearby.forEach((n) => used.add(n.place.id));
     }
     const stops = [hotel, ...slots.map((s) => s.options[s.chosen]!.place), hotel].filter(
       Boolean,
@@ -1355,7 +1572,9 @@ export async function buildMultiplePlans(input: TripInput): Promise<TripPlan[]> 
   naturePlan.planStyle = "Scenic & Nature";
 
   // Variation 3: Culinary & Authentic Local Living
-  const culinaryInterests = Array.from(new Set(["Food", "Shopping", "Culture", ...input.interests]));
+  const culinaryInterests = Array.from(
+    new Set(["Food", "Shopping", "Culture", ...input.interests]),
+  );
   const culinaryPlan = await buildPlan({ ...input, interests: culinaryInterests });
   culinaryPlan.title = "Option 3: Culinary & Authentic Local Living";
   culinaryPlan.description =
@@ -1375,4 +1594,3 @@ export async function buildMultiplePlans(input: TripInput): Promise<TripPlan[]> 
 
   return [basePlan, naturePlan, culinaryPlan, expressPlan];
 }
-

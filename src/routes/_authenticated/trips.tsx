@@ -105,7 +105,8 @@ export function TripsPage() {
             {t.myTrips}
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {t.activeItineraries || "Manage your active journeys, drafts, budgets, and verified stops worldwide."}
+            {t.activeItineraries ||
+              "Manage your active journeys, drafts, budgets, and verified stops worldwide."}
           </p>
         </div>
 
@@ -207,9 +208,7 @@ export function TripsPage() {
 
       {rows && filteredRows.length === 0 && (
         <Card className="p-8 text-center text-sm text-muted-foreground rounded-2xl border">
-          <p>
-            No {filter === "all" ? "" : filter} plans found. Create a new plan to see it here!
-          </p>
+          <p>No {filter === "all" ? "" : filter} plans found. Create a new plan to see it here!</p>
           <div className="mt-4">
             <Button asChild>
               <Link to="/plan">
@@ -246,9 +245,7 @@ export function TripsPage() {
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {tRow.destination?.country || "Worldwide"} ·{" "}
-                    {tRow.start_date
-                      ? `${tRow.start_date} → ${tRow.end_date}`
-                      : "Flexible Dates"}
+                    {tRow.start_date ? `${tRow.start_date} → ${tRow.end_date}` : "Flexible Dates"}
                   </p>
                 </div>
 
@@ -279,7 +276,9 @@ export function TripsPage() {
                 <div className="flex items-center gap-4 text-muted-foreground">
                   <span>{stopsCount} Verified Stops</span>
                   <span>·</span>
-                  <span>Budget: {tRow.currency || "INR"} {(tRow.budget || 20000).toLocaleString()}</span>
+                  <span>
+                    Budget: {tRow.currency || "INR"} {(tRow.budget || 20000).toLocaleString()}
+                  </span>
                 </div>
 
                 <Button asChild size="sm" className="h-8 font-semibold text-xs">
